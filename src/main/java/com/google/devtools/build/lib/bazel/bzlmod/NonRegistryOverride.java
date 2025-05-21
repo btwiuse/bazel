@@ -31,4 +31,15 @@ public record NonRegistryOverride(RepoSpec repoSpec) implements ModuleOverride {
   // repo mapping.
   public static final ImmutableSet<RepoRuleId> BOOTSTRAP_REPO_RULES =
       ImmutableSet.of(ArchiveRepoSpecBuilder.HTTP_ARCHIVE, GitRepoSpecBuilder.GIT_REPOSITORY);
+
+  /**
+   * A special "sentinel" override for the {@code bazel_tools} repo, which is hardcoded to come from
+   * the {@code embedded_tools} directory bundled with Bazel. It has a null repo spec, which is not
+   * normally allowed.
+   *
+   * <p>Note that this override is never actually inspected, so it can contain an arbitrary repo
+   * spec. In {@code RepositoryDelegatorFunction}, the logic to fetch {@code bazel_tools} exits
+   * before reading the repo spec.
+   */
+  public static final NonRegistryOverride BAZEL_TOOLS_OVERRIDE = new NonRegistryOverride(null);
 }
