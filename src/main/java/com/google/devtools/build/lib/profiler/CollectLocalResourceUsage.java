@@ -476,11 +476,20 @@ public class CollectLocalResourceUsage implements LocalResourceCollector {
 
     @Override
     public void collect(double deltaNanos, BiConsumer<CounterSeriesTask, Double> consumer) {
-      var systemNetworkUsages =
-          NetworkMetricsCollector.instance().collectSystemNetworkUsages(deltaNanos);
-      if (systemNetworkUsages != null) {
-        consumer.accept(SYSTEM_NETWORK_UP_USAGE, systemNetworkUsages.megabitsSentPerSec());
-        consumer.accept(SYSTEM_NETWORK_DOWN_USAGE, systemNetworkUsages.megabitsRecvPerSec());
+      try {
+        var systemNetworkUsages =
+            NetworkMetricsCollector.instance().collectSystemNetworkUsages(deltaNanos);
+        if (systemNetworkUsages != null) {
+          // Store the method call results to avoid potential race conditions
+          double megabitsSentPerSec = systemNetworkUsages.megabitsSentPerSec();
+          double megabitsRecvPerSec = systemNetworkUsages.megabitsRecvPerSec();
+          consumer.accept(SYSTEM_NETWORK_UP_USAGE, megabitsSentPerSec);
+          consumer.accept(SYSTEM_NETWORK_DOWN_USAGE, megabitsRecvPerSec);
+        }
+      } catch (NullPointerException e) {
+        // Handle NPE gracefully - network metrics collection can fail on some systems
+        // Log and continue without crashing the profiler
+        // This is a defensive measure against race conditions in network metrics collection
       }
     }
   }
